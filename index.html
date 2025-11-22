@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run World Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Helvetica+Neue:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 1;
+        }
+        
+        .leaflet-container {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .overlay {
+            position: fixed;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 0;
+            padding: 32px;
+            box-shadow: none;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            max-width: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+            padding: 24px 48px;
+            border-radius: 0;
+            z-index: 1001;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 0;
+            color: #fff;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        
+        .header p {
+            display: none;
+        }
+        
+        .stats {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            min-width: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            border-top: 2px solid rgba(255, 255, 255, 0.15);
+            padding: 32px 48px;
+            border-radius: 0;
+            z-index: 1001;
+        }
+        
+        .stats h2 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 32px;
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-item {
+            text-align: left;
+        }
+        
+        .stat-value {
+            font-size: 48px;
+            font-weight: 900;
+            color: #fff;
+            display: block;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+        
+        .activity-types {
+            margin-top: 0;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+        
+        .activity-type {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s;
+        }
+        
+        .activity-type:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .activity-name {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .activity-count {
+            font-size: 32px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -1px;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 100px;
+            right: 48px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 24px;
+            border-radius: 12px;
+            z-index: 1001;
+        }
+        
+        .control-btn {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            margin-bottom: 12px;
+            background: #fff;
+            border: none;
+            border-radius: 30px;
+            color: #000;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-btn:hover {
+            background: #f5f5f5;
+            transform: scale(1.02);
+        }
+        
+        .control-btn:last-of-type {
+            margin-bottom: 0;
+        }
+        
+        .control-btn.secondary {
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+        }
+        
+        .control-btn.secondary:hover {
+            background: #fff;
+            color: #000;
+        }
+        
+        .filter-group {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .filter-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            display: block;
+            font-weight: 700;
+        }
+        
+        .filter-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .filter-checkbox:last-child {
+            border-bottom: none;
+        }
+        
+        .filter-checkbox input {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #fff;
+        }
+        
+        .filter-checkbox label {
+            font-size: 13px;
+            color: #fff;
+            cursor: pointer;
+            flex: 1;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #fc5200;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: rgba(220, 38, 38, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+        }
+        
+        @media (max-width: 768px) {
+            .overlay {
+                padding: 15px;
+            }
+            
+            .header {
+                max-width: calc(100% - 40px);
+            }
+            
+            .stats {
+                min-width: auto;
+                width: calc(100% - 40px);
+            }
+            
+            .controls {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+                left: auto;
+            }
+        }
+        
+        /* Custom Leaflet popup styling */
+        .leaflet-popup-content-wrapper {
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .leaflet-popup-content {
+            margin: 20px;
+            font-family: 'Helvetica Neue', sans-serif;
+        }
+        
+        .leaflet-popup-tip {
+            background: rgba(0, 0, 0, 0.95);
+        }
+        
+        .popup-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+        
+        .popup-info {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.8;
+            font-weight: 400;
+        }
+        
+        .popup-info strong {
+            color: #fff;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        <p>LOADING YOUR RUNS...</p>
+    </div>
+    
+    <!-- Map Container -->
+    <div id="map"></div>
+    
+    <!-- Header -->
+    <div class="overlay header">
+        <h1>RUN WORLD MAP</h1>
+    </div>
+    
+    <!-- Stats Panel -->
+    <div class="overlay stats">
+        <h2>YOUR STATS</h2>
+        <div class="stat-grid">
+            <div class="stat-item">
+                <span class="stat-value" id="total-activities">0</span>
+                <span class="stat-label">ACTIVITIES</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="total-distance">0 mi</span>
+                <span class="stat-label">DISTANCE</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="total-time">0h</span>
+                <span class="stat-label">TIME</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="total-elevation">0 ft</span>
+                <span class="stat-label">ELEVATION</span>
+            </div>
+        </div>
+        <div class="activity-types" id="activity-types">
+            <!-- Activity types will be populated here -->
+        </div>
+    </div>
+    
+    <!-- Controls -->
+    <div class="overlay controls">
+        <button class="control-btn" onclick="fitMapToActivities()">VIEW ALL</button>
+        
+        <div class="filter-group">
+            <span class="filter-label">FILTER BY TYPE</span>
+            <div id="activity-filters">
+                <!-- Filters will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Global variables
+        let map;
+        let activitiesData = [];
+        let polylines = [];
+        let activityTypes = new Set();
+        let activeFilters = new Set(); // Empty = nothing shown, add types to show them
+        let heatmapEnabled = true;
+        
+        // Color schemes for different activity types - all bright green
+        const activityColors = {
+            'Run': '#00ff00',
+            'Ride': '#00ff00',
+            'VirtualRide': '#00ff00',
+            'VirtualRun': '#00ff00',
+            'Walk': '#00ff00',
+            'Hike': '#00ff00',
+            'TrailRun': '#00ff00',
+            'Swim': '#00ff00',
+            'WeightTraining': '#00ff00',
+            'Workout': '#00ff00',
+            'Yoga': '#00ff00',
+            'default': '#00ff00'
+        };
+        
+        // Initialize map
+        function initMap() {
+            // Ensure map container exists and is visible
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) {
+                console.error('Map container not found');
+                return;
+            }
+            
+            map = L.map('map', {
+                zoomControl: false,
+                attributionControl: true,
+                worldCopyJump: false,
+                maxBounds: [[-90, -180], [90, 180]],
+                maxBoundsViscosity: 1.0
+            }).setView([20, 0], 2);
+            
+            // Add dark theme tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 19,
+                noWrap: true,
+                bounds: [[-90, -180], [90, 180]]
+            }).addTo(map);
+            
+            // Add zoom control to bottom right
+            L.control.zoom({
+                position: 'bottomright'
+            }).addTo(map);
+            
+            // Force map to resize after initialization
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+        
+        // Load activities data
+        async function loadActivities() {
+            try {
+                const response = await fetch('activities.json');
+                if (!response.ok) {
+                    throw new Error('Could not load activities.json');
+                }
+                activitiesData = await response.json();
+                
+                // On initial load, check all outdoor activity types
+                const excludedTypes = ['Elliptical', 'Racquetball', 'StairStepper', 'WeightTraining', 'HighIntensityIntervalTraining', 'Workout', 'Swim', 'Rowing'];
+                activitiesData.forEach(activity => {
+                    const sportType = activity.sport_type || activity.type;
+                    if (!excludedTypes.includes(sportType)) {
+                        activeFilters.add(sportType);
+                    }
+                });
+                
+                // Process activities
+                processActivities();
+                
+                // Hide loading screen
+                document.getElementById('loading').style.display = 'none';
+                
+                // Auto-fit to show all activities on initial load
+                if (polylines.length > 0) {
+                    fitMapToActivities();
+                }
+                
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `
+                    <div class="overlay error">
+                        <h2>Error Loading Data</h2>
+                        <p>Could not load activities.json</p>
+                        <p style="margin-top: 10px; font-size: 12px;">Make sure you've run fetch_activities.py first!</p>
+                    </div>
+                `;
+                console.error('Error loading activities:', error);
+            }
+        }
+        
+        // Process and display activities
+        function processActivities() {
+            // Clear existing polylines
+            polylines.forEach(p => map.removeLayer(p));
+            polylines = [];
+            activityTypes.clear();
+            
+            // Activity types to exclude from filters
+            const excludedTypes = ['Elliptical', 'Racquetball', 'StairStepper', 'WeightTraining', 'HighIntensityIntervalTraining', 'Workout', 'Swim', 'Rowing'];
+            
+            // Calculate statistics
+            let totalDistance = 0;
+            let totalTime = 0;
+            let totalElevation = 0;
+            const typeCount = {};
+            
+            // Draw each activity on map
+            activitiesData.forEach(activity => {
+                const sportType = activity.sport_type || activity.type;
+                
+                // Only add to activityTypes if not excluded
+                if (!excludedTypes.includes(sportType)) {
+                    activityTypes.add(sportType);
+                }
+                
+                // Update counts
+                typeCount[sportType] = (typeCount[sportType] || 0) + 1;
+                
+                // Update totals
+                totalDistance += activity.distance || 0;
+                totalTime += activity.moving_time || 0;
+                totalElevation += activity.total_elevation_gain || 0;
+                
+                // Draw activity if it has coordinates
+                if (activity.coordinates && activity.coordinates.length > 0) {
+                    // Only show if this activity type is in activeFilters
+                    // If activeFilters is empty, show nothing
+                    if (activeFilters.size === 0 || !activeFilters.has(sportType)) {
+                        return;
+                    }
+                    
+                    const color = activityColors[sportType] || activityColors['default'];
+                    const opacity = heatmapEnabled ? 0.4 : 0.6;
+                    const weight = heatmapEnabled ? 4 : 3;
+                    
+                    const polyline = L.polyline(activity.coordinates, {
+                        color: color,
+                        weight: weight,
+                        opacity: opacity,
+                        smoothFactor: 1
+                    }).addTo(map);
+                    
+                    // Add popup with activity info
+                    const popupContent = `
+                        <div class="popup-title">${activity.name}</div>
+                        <div class="popup-info">
+                            <strong>Type:</strong> ${sportType}<br>
+                            <strong>Distance:</strong> ${(activity.distance / 1609.34).toFixed(2)} mi<br>
+                            <strong>Time:</strong> ${formatTime(activity.moving_time)}<br>
+                            <strong>Date:</strong> ${formatDate(activity.start_date)}
+                            ${activity.location_city ? '<br><strong>Location:</strong> ' + activity.location_city : ''}
+                        </div>
+                    `;
+                    polyline.bindPopup(popupContent);
+                    
+                    polylines.push(polyline);
+                }
+            });
+            
+            // Update statistics display
+            document.getElementById('total-activities').textContent = activitiesData.length;
+            document.getElementById('total-distance').textContent = (totalDistance / 1609.34).toFixed(0) + ' mi';
+            document.getElementById('total-time').textContent = Math.round(totalTime / 3600) + 'h';
+            document.getElementById('total-elevation').textContent = Math.round(totalElevation * 3.28084) + ' ft';
+            
+            // Update activity types list
+            const activityTypesContainer = document.getElementById('activity-types');
+            activityTypesContainer.innerHTML = '';
+            
+            // Sort by count and filter to only show non-excluded types
+            const sortedTypes = Object.entries(typeCount)
+                .filter(([type, count]) => !excludedTypes.includes(type))
+                .sort((a, b) => b[1] - a[1]);
+            
+            sortedTypes.forEach(([type, count]) => {
+                const div = document.createElement('div');
+                div.className = 'activity-type';
+                div.innerHTML = `
+                    <span class="activity-name">${type}</span>
+                    <span class="activity-count">${count}</span>
+                `;
+                activityTypesContainer.appendChild(div);
+            });
+            
+            // Update filters
+            updateFilters();
+        }
+        
+        // Update activity type filters
+        function updateFilters() {
+            const filtersContainer = document.getElementById('activity-filters');
+            filtersContainer.innerHTML = '';
+            
+            Array.from(activityTypes).sort().forEach(type => {
+                const div = document.createElement('div');
+                div.className = 'filter-checkbox';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `filter-${type}`;
+                // Start unchecked, only check if in activeFilters
+                checkbox.checked = activeFilters.has(type);
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        // Add this type to show it on the map
+                        activeFilters.add(type);
+                    } else {
+                        // Remove this type to hide it from the map
+                        activeFilters.delete(type);
+                    }
+                    
+                    processActivities();
+                });
+                
+                const label = document.createElement('label');
+                label.htmlFor = `filter-${type}`;
+                label.textContent = type;
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                filtersContainer.appendChild(div);
+            });
+        }
+        
+        // Fit map to show all activities
+        function fitMapToActivities() {
+            if (polylines.length === 0) return;
+            
+            const bounds = L.latLngBounds();
+            polylines.forEach(polyline => {
+                bounds.extend(polyline.getBounds());
+            });
+            
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+        
+        // Toggle heatmap mode
+        function toggleHeatmap() {
+            heatmapEnabled = !heatmapEnabled;
+            processActivities();
+        }
+        
+        // Format time in seconds to readable format
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+        
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+        
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadActivities();
+        });
+    </script>
+</body>
+</html>
+

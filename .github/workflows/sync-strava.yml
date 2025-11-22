@@ -1,0 +1,57 @@
+name: Daily Strava Sync
+
+on:
+  schedule:
+    # Runs every day at 6 AM UTC (adjust to your timezone)
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Create .env file from secrets
+        run: |
+          echo "STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }}" >> .env
+          echo "STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }}" >> .env
+          echo "STRAVA_ACCESS_TOKEN=${{ secrets.STRAVA_ACCESS_TOKEN }}" >> .env
+          echo "STRAVA_REFRESH_TOKEN=${{ secrets.STRAVA_REFRESH_TOKEN }}" >> .env
+      
+      - name: Sync Strava activities
+        run: |
+          python sync_activities.py
+      
+      - name: Commit and push if activities changed
+        run: |
+          git config user.name "Strava Sync Bot"
+          git config user.email "actions@github.com"
+          git add activities.json
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No new activities to sync"
+          else
+            git commit -m "🏃 Auto-update: Strava activities $(date +'%Y-%m-%d %H:%M')"
+            git push
+            echo "✅ New activities synced and pushed!"
+          fi
+      
+      - name: Deploy to Netlify (if configured)
+        if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != '' }}
+        run: |
+          npm install -g netlify-cli
+          netlify deploy --prod --auth=${{ secrets.NETLIFY_AUTH_TOKEN }} --site=${{ secrets.NETLIFY_SITE_ID }}
+
