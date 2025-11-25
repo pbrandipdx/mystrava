@@ -1,0 +1,54 @@
+=================================================================
+INSTRUCTIONS TO UPDATE YOUR LIVE GITHUB SITE
+=================================================================
+
+Go to: https://github.com/pbrandipdx/mystrava/blob/main/index.html
+Click the pencil icon (Edit this file)
+
+=================================================================
+CHANGE #1: Update the Stats Header (around line 374)
+=================================================================
+
+FIND THIS:
+        <h2>YOUR STATS</h2>
+
+REPLACE WITH:
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 24px;">
+            MY STATS 
+            <span style="font-size: 10px; color: rgba(255, 255, 255, 0.4); font-weight: 400; margin-left: 8px;">(Last updated on <span id="last-updated">--</span>)</span>
+        </h2>
+
+=================================================================
+CHANGE #2: Add JavaScript for Date (around line 592)
+=================================================================
+
+FIND THIS LINE:
+            document.getElementById('total-elevation').textContent = Math.round(totalElevation * 3.28084) + ' ft';
+
+RIGHT AFTER THAT LINE, ADD:
+            
+            // Update last updated date
+            if (activitiesData.length > 0) {
+                const sortedByDate = [...activitiesData].sort((a, b) => 
+                    new Date(b.start_date) - new Date(a.start_date)
+                );
+                const lastActivity = new Date(sortedByDate[0].start_date);
+                const updateText = lastActivity.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+                document.getElementById('last-updated').textContent = updateText;
+            }
+
+=================================================================
+THEN:
+Scroll to bottom
+Click "Commit changes"
+Wait 2-3 minutes
+Visit: https://pbrandipdx.github.io/mystrava/
+Press Cmd+Shift+R to hard refresh
+=================================================================
+
+RESULT: You'll see "MY STATS (Last updated on Nov 21, 2025)"
+
