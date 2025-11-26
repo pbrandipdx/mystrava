@@ -535,6 +535,11 @@
                 border-radius: 0 !important;
                 padding: 20px 16px !important;
             }
+            
+            /* Hide all filters on mobile - just show VIEW ALL button */
+            .filter-group {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -907,18 +912,6 @@
                     
                     console.log('New active filters:', Array.from(activeFilters));
                     processActivities();
-                    
-                    // Auto-close menu on mobile
-                    if (window.innerWidth <= 768) {
-                        setTimeout(() => {
-                            const controls = document.querySelector('.controls');
-                            const menuToggle = document.getElementById('menuToggle');
-                            if (controls && menuToggle) {
-                                controls.classList.add('mobile-hidden');
-                                menuToggle.textContent = '☰';
-                            }
-                        }, 500);
-                    }
                 });
                 
                 div.appendChild(checkbox);
