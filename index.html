@@ -272,7 +272,7 @@
             flex: 1;
             font-weight: 500;
             letter-spacing: 0.5px;
-            pointer-events: none;
+            pointer-events: auto;
         }
         
         .loading {
@@ -543,7 +543,7 @@
             .controls.mobile-hidden {
                 transform: translateX(100%);
                 opacity: 0;
-                pointer-events: none;
+                pointer-events: none !important;
             }
             
             .controls {
@@ -562,6 +562,11 @@
                 transition: transform 0.3s ease, opacity 0.3s ease;
                 overflow-y: auto;
                 z-index: 1001 !important;
+                pointer-events: auto !important;
+            }
+            
+            .controls * {
+                pointer-events: auto !important;
             }
         }
     </style>
