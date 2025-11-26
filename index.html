@@ -245,6 +245,8 @@
             padding: 12px 0;
             cursor: pointer;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+            user-select: none;
         }
         
         .filter-checkbox:last-child {
@@ -257,6 +259,8 @@
             height: 20px;
             cursor: pointer;
             accent-color: #fff;
+            pointer-events: auto;
+            flex-shrink: 0;
         }
         
         .filter-checkbox label {
@@ -266,6 +270,7 @@
             flex: 1;
             font-weight: 500;
             letter-spacing: 0.5px;
+            pointer-events: none;
         }
         
         .loading {
@@ -425,6 +430,7 @@
                 min-height: 48px;
                 display: flex;
                 align-items: center;
+                -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
             }
             
             .filter-checkbox input {
@@ -871,8 +877,20 @@
                 checkbox.id = `filter-${type}`;
                 // Start unchecked, only check if in activeFilters
                 checkbox.checked = activeFilters.has(type);
-                checkbox.addEventListener('change', (e) => {
-                    if (e.target.checked) {
+                
+                const label = document.createElement('label');
+                label.htmlFor = `filter-${type}`;
+                label.textContent = type;
+                
+                // Make the entire div clickable
+                div.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Toggle checkbox
+                    checkbox.checked = !checkbox.checked;
+                    
+                    if (checkbox.checked) {
                         // Add this type to show it on the map
                         activeFilters.add(type);
                     } else {
@@ -894,10 +912,6 @@
                         }, 300);
                     }
                 });
-                
-                const label = document.createElement('label');
-                label.htmlFor = `filter-${type}`;
-                label.textContent = type;
                 
                 div.appendChild(checkbox);
                 div.appendChild(label);
