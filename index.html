@@ -294,6 +294,13 @@
             font-size: 14px;
             letter-spacing: 2px;
             color: rgba(255, 255, 255, 0.8);
+            margin-top: 10px;
+        }
+        
+        .loading-progress {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 10px;
         }
         
         .loading-spinner {
@@ -583,6 +590,7 @@
     <div id="loading" class="loading">
         <div class="loading-spinner"></div>
         <p>LOADING YOUR RUNS...</p>
+        <div class="loading-progress" id="loading-progress"></div>
     </div>
     
     <!-- Map Container -->
@@ -718,11 +726,20 @@
         // Load activities data
         async function loadActivities() {
             try {
+                const progressEl = document.getElementById('loading-progress');
+                if (progressEl) progressEl.textContent = 'Downloading activities...';
+                
                 const response = await fetch('activities.json');
                 if (!response.ok) {
                     throw new Error('Could not load activities.json');
                 }
+                
+                if (progressEl) progressEl.textContent = 'Processing activities...';
                 activitiesData = await response.json();
+                
+                console.log(`Loaded ${activitiesData.length} activities`);
+                
+                if (progressEl) progressEl.textContent = 'Initializing filters...';
                 
                 // On initial load, check all outdoor activity types
                 const excludedTypes = ['Elliptical', 'Racquetball', 'StairStepper', 'WeightTraining', 'HighIntensityIntervalTraining', 'Workout', 'Swim', 'Rowing'];
@@ -733,16 +750,23 @@
                     }
                 });
                 
-                // Process activities
-                processActivities();
+                if (progressEl) progressEl.textContent = 'Rendering map...';
                 
-                // Hide loading screen
-                document.getElementById('loading').style.display = 'none';
-                
-                // Auto-fit to show all activities on initial load
-                if (polylines.length > 0) {
-                    fitMapToActivities();
-                }
+                // Use setTimeout to allow UI to update
+                setTimeout(() => {
+                    // Process activities
+                    processActivities();
+                    
+                    // Hide loading screen
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    // Auto-fit to show all activities on initial load
+                    setTimeout(() => {
+                        if (polylines.length > 0) {
+                            fitMapToActivities();
+                        }
+                    }, 100);
+                }, 50);
                 
             } catch (error) {
                 document.getElementById('loading').innerHTML = `
@@ -772,6 +796,10 @@
             let totalElevation = 0;
             const typeCount = {};
             
+            // Batch rendering for better performance
+            const MAX_ACTIVITIES_TO_RENDER = 500; // Limit for performance
+            let renderedCount = 0;
+            
             // Draw each activity on map
             activitiesData.forEach(activity => {
                 const sportType = activity.sport_type || activity.type;
@@ -797,19 +825,33 @@
                         return;
                     }
                     
+                    // Performance: Only render a limited number of activities
+                    if (renderedCount >= MAX_ACTIVITIES_TO_RENDER) {
+                        return;
+                    }
+                    renderedCount++;
+                    
                     const color = activityColors[sportType] || activityColors['default'];
                     const opacity = heatmapEnabled ? 0.4 : 0.6;
                     
                     // Adjust weight and smoothing for mobile
                     const isMobile = window.innerWidth <= 768;
-                    const weight = isMobile ? (heatmapEnabled ? 3 : 2.5) : (heatmapEnabled ? 4 : 3);
-                    const smoothFactor = isMobile ? 2 : 1; // More smoothing on mobile for performance
+                    const weight = isMobile ? (heatmapEnabled ? 2.5 : 2) : (heatmapEnabled ? 3.5 : 2.5);
+                    const smoothFactor = isMobile ? 3 : 2; // More smoothing for performance
                     
-                    const polyline = L.polyline(activity.coordinates, {
+                    // Simplify coordinates for better performance
+                    const simplifiedCoords = activity.coordinates.filter((coord, idx) => {
+                        // Keep every Nth coordinate based on length
+                        const skipFactor = activity.coordinates.length > 100 ? 3 : 1;
+                        return idx % skipFactor === 0;
+                    });
+                    
+                    const polyline = L.polyline(simplifiedCoords.length > 0 ? simplifiedCoords : activity.coordinates, {
                         color: color,
                         weight: weight,
                         opacity: opacity,
-                        smoothFactor: smoothFactor
+                        smoothFactor: smoothFactor,
+                        interactive: true // Enable popups but optimize
                     }).addTo(map);
                     
                     // Add popup with activity info
