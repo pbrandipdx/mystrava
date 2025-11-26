@@ -255,12 +255,14 @@
         
         .filter-checkbox input {
             margin-right: 12px;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
             accent-color: #fff;
             pointer-events: auto;
             flex-shrink: 0;
+            -webkit-appearance: checkbox;
+            appearance: checkbox;
         }
         
         .filter-checkbox label {
@@ -875,28 +877,25 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `filter-${type}`;
-                // Start unchecked, only check if in activeFilters
                 checkbox.checked = activeFilters.has(type);
                 
                 const label = document.createElement('label');
                 label.htmlFor = `filter-${type}`;
                 label.textContent = type;
                 
-                // Make the entire div clickable
-                div.addEventListener('click', (e) => {
-                    e.preventDefault();
+                // Add event listener directly to checkbox for better mobile compatibility
+                checkbox.addEventListener('click', (e) => {
                     e.stopPropagation();
                     
-                    // Toggle checkbox
-                    checkbox.checked = !checkbox.checked;
-                    
+                    // Use the checkbox's checked state directly
                     if (checkbox.checked) {
-                        // Add this type to show it on the map
                         activeFilters.add(type);
                     } else {
-                        // Remove this type to hide it from the map
                         activeFilters.delete(type);
                     }
+                    
+                    console.log(`Filter ${type}: ${checkbox.checked ? 'checked' : 'unchecked'}`);
+                    console.log('Active filters:', Array.from(activeFilters));
                     
                     processActivities();
                     
@@ -911,6 +910,12 @@
                             }
                         }, 300);
                     }
+                });
+                
+                // Also make label clickable
+                label.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    checkbox.click();
                 });
                 
                 div.appendChild(checkbox);
