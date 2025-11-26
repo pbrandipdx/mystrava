@@ -242,11 +242,13 @@
         .filter-checkbox {
             display: flex;
             align-items: center;
-            padding: 12px 0;
+            padding: 16px 8px;
             cursor: pointer;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
             user-select: none;
+            min-height: 56px;
+            touch-action: manipulation;
         }
         
         .filter-checkbox:last-child {
@@ -875,6 +877,9 @@
             const filtersContainer = document.getElementById('activity-filters');
             filtersContainer.innerHTML = '';
             
+            console.log('Updating filters. Active filters:', Array.from(activeFilters));
+            console.log('Activity types:', Array.from(activityTypes));
+            
             Array.from(activityTypes).sort().forEach(type => {
                 const div = document.createElement('div');
                 div.className = 'filter-checkbox';
@@ -883,28 +888,32 @@
                 checkbox.type = 'checkbox';
                 checkbox.id = `filter-${type}`;
                 checkbox.checked = activeFilters.has(type);
+                checkbox.style.width = '24px';
+                checkbox.style.height = '24px';
+                checkbox.style.marginRight = '12px';
+                
+                console.log(`Creating checkbox for ${type}: checked=${checkbox.checked}`);
                 
                 const label = document.createElement('label');
                 label.htmlFor = `filter-${type}`;
                 label.textContent = type;
+                label.style.fontSize = '16px';
+                label.style.cursor = 'pointer';
                 
-                // Add event listener directly to checkbox for better mobile compatibility
-                checkbox.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                // Super simple click handler on checkbox only
+                checkbox.addEventListener('change', function(e) {
+                    console.log(`Checkbox ${type} changed to: ${this.checked}`);
                     
-                    // Use the checkbox's checked state directly
-                    if (checkbox.checked) {
+                    if (this.checked) {
                         activeFilters.add(type);
                     } else {
                         activeFilters.delete(type);
                     }
                     
-                    console.log(`Filter ${type}: ${checkbox.checked ? 'checked' : 'unchecked'}`);
-                    console.log('Active filters:', Array.from(activeFilters));
-                    
+                    console.log('New active filters:', Array.from(activeFilters));
                     processActivities();
                     
-                    // Auto-close menu on mobile after filter change
+                    // Auto-close menu on mobile
                     if (window.innerWidth <= 768) {
                         setTimeout(() => {
                             const controls = document.querySelector('.controls');
@@ -913,14 +922,8 @@
                                 controls.classList.add('mobile-hidden');
                                 menuToggle.textContent = '☰';
                             }
-                        }, 300);
+                        }, 500);
                     }
-                });
-                
-                // Also make label clickable
-                label.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    checkbox.click();
                 });
                 
                 div.appendChild(checkbox);
